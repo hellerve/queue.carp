@@ -1,0 +1,40 @@
+(deftype (Queue a) [
+  mx (Maybe Int)
+  lst (Array a)
+])
+
+(deftype (QueueResult a) [
+  q (Queue a)
+  e a
+])
+
+(defmodule Queue
+  (defn unlimited []
+    (init (Maybe.Nothing) []))
+
+  (defn limited [n]
+    (init (Maybe.Just n) []))
+
+  (defn str [q]
+    (fmt "(Queue %s)" &(str (lst q))))
+
+  (defn prn [q]
+    (str (the (Ref (Queue a)) q)))
+
+  (defn enqueue [q e]
+    (match @(mx &q)
+      (Maybe.Nothing)
+        (Maybe.Just (update-lst q &(fn [a] (Array.push-back a e))))
+      (Maybe.Just lim)
+        (if (< (Array.length (lst &q)) lim)
+          (Maybe.Just (update-lst q &(fn [a] (Array.push-back a e))))
+          (Maybe.Nothing))))
+
+  (defn dequeue [q]
+    (let [l (lst &q)]
+      (match (Array.first l)
+        (Maybe.Nothing) (Maybe.Nothing)
+        (Maybe.Just f)
+          (Maybe.Just
+            (QueueResult.init (update-lst q &(fn [a] (Array.suffix-array &a 1))) f)))))
+)
