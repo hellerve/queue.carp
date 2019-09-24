@@ -1,12 +1,12 @@
 (deftype (Queue a) [
-  mx (Maybe Int)
-  lst (Array a)
+  limit (Maybe Int)
+  entries (Array a)
 ])
 
-(deftype (QueueResult a) [
-  q (Queue a)
-  e a
-])
+(deftype (QueueResult a)
+  (Tuple [(Queue a) a])
+  (None [])
+)
 
 (defmodule Queue
   (defn unlimited []
@@ -16,25 +16,52 @@
     (init (Maybe.Just n) []))
 
   (defn str [q]
-    (fmt "(Queue %s)" &(str (lst q))))
+    (fmt "(Queue %s)" &(str (entries q))))
 
   (defn prn [q]
     (str (the (Ref (Queue a)) q)))
 
   (defn enqueue [q e]
-    (match @(mx &q)
+    (match @(limit &q)
       (Maybe.Nothing)
-        (Maybe.Just (update-lst q &(fn [a] (Array.push-back a e))))
+        (Maybe.Just (update-entries q &(fn [a] (Array.push-back a e))))
       (Maybe.Just lim)
-        (if (< (Array.length (lst &q)) lim)
-          (Maybe.Just (update-lst q &(fn [a] (Array.push-back a e))))
+        (if (< (Array.length (entries &q)) lim)
+          (Maybe.Just (update-entries q &(fn [a] (Array.push-back a e))))
           (Maybe.Nothing))))
 
   (defn dequeue [q]
-    (let [l (lst &q)]
+    (let [l (entries &q)]
       (match (Array.first l)
-        (Maybe.Nothing) (Maybe.Nothing)
+        (Maybe.Nothing) (QueueResult.None)
         (Maybe.Just f)
-          (Maybe.Just
-            (QueueResult.init (update-lst q &(fn [a] (Array.suffix-array &a 1))) f)))))
+          (QueueResult.Tuple (update-entries q &(fn [a] (Array.suffix-array &a 1))) f))))
+
+  (defn = [a b]
+    (and
+      (= (limit a) (limit b))
+      (= (entries a) (entries b))))
+)
+
+(defmodule QueueResult
+  (defn none? [a]
+    (match @a
+      (None) true
+      _ false))
+
+  (defn tuple? [a]
+    (match @a
+      (Tuple _ _) true
+      _ false))
+
+  (defn = [a b]
+    (match @a
+      (None) (none? b)
+      (Tuple arr elem)
+        (match @b
+          (None) false
+          (Tuple arr2 elem2)
+            (and
+              (= &arr &arr2)
+              (= &elem &elem2)))))
 )

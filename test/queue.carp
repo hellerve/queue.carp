@@ -1,0 +1,43 @@
+(load "queue.carp")
+(load "Test.carp")
+
+(use-all Test Queue)
+
+; hack! necessary because the maybe contains an array
+(defn = [a b]
+  (and
+    (= (limit &a) (limit &b))
+    (= (entries &a) (entries &b))))
+
+(deftest test
+  (assert-equal test
+                &[]
+                (entries &(the (Queue Int) (Queue.unlimited)))
+                "unlimited queue is initially empty"
+  )
+  (assert-equal test
+                &[]
+                (entries &(the (Queue Int) (Queue.limited 0)))
+                "limited queue is initially empty"
+  )
+  (assert-equal test
+                &[1]
+                (entries &(Maybe.from (enqueue (Queue.unlimited) 1) (Queue.unlimited)))
+                "unlimited queue can enqueue things"
+  )
+  (assert-equal test
+                &[1]
+                (entries &(Maybe.from (enqueue (Queue.limited 1) 1) (Queue.unlimited)))
+                "limited queue can enqueue things if limit is enough"
+  )
+  (assert-equal test
+                &(Maybe.Nothing)
+                &(enqueue (Queue.limited 0) 1)
+                "limited queue cannot enqueue things if limit is not enough"
+  )
+  (assert-equal test
+                &(QueueResult.Tuple (Queue.unlimited) 1)
+                &(dequeue (Maybe.from (enqueue (Queue.unlimited) 1) (Queue.unlimited)))
+                "queue can dequeue things if its not empty"
+  )
+)
